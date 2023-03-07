@@ -1,0 +1,60 @@
+# Use postgres/example user/password credentials
+version: '3.1'
+services:
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - pg-data-store:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: db_name
+      POSTGRES_USER: db_user
+      POSTGRES_PASSWORD: db_pass
+    ports:
+      - 5432:5432
+    networks:
+      - net
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    networks:
+      - net
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk11
+    privileged: true
+    user: root
+    ports:
+      - 8081:8080
+      - 50000:50000
+    volumes:
+      - ./.local_cd/.jenkins:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/local/bin/docker
+      - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose
+    networks:
+      - net
+
+  tomcat:
+    image: kingk0der/tomcat-docker:9-jdk16-openjdk
+    env_file:
+      - ./.local_cd/tomcat/tomcat.env
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - ./.cd/tomcat/.ssl/ssl.crt:/usr/local/tomcat/conf/ssl.crt
+      - ./.cd/tomcat/.ssl/ssl.key:/usr/local/tomcat/conf/ssl.key
+      - ./.cd/tomcat/server.xml:/usr/local/tomcat/conf/server.xml
+      - ./.cd/tomcat/catalina.policy:/usr/local/tomcat/conf/catalina.policy
+      - ./.cd/tomcat/tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml
+      - ./.cd/tomcat/webapps:/usr/local/tomcat/webapps
+    networks:
+      - net
+volumes:
+  pg-data-store:
+
+networks:
+  net:
+    driver: bridge
